@@ -1,0 +1,68 @@
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js
+/.next/
+/out/
+
+# IDX / Firebase Studio specific
+/.idx/
+# .firebase/ # For Firebase emulators and config, if not shared. Uncomment if needed.
+# *.firebase.*.log # Firebase emulator logs. Uncomment if needed.
+
+# VSCode
+# It's common to ignore .vscode entirely.
+# If you have specific settings you MUST share, you can un-ignore them like:
+# !.vscode/settings.json
+.vscode/
+
+# Local Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Build output
+# Next.js output is already covered by /.next/ and /out/
+# dist
+# build
+
+# Test files
+/coverage
+.nyc_output
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.swp
+*~
+*.tmp
+*.bak
+*.patch
+
+# Other
+.npm
+.eslintcache
+.stylelintcache
+.prettiercache
+.turbo
