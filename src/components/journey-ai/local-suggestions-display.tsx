@@ -70,7 +70,7 @@ export function LocalSuggestionsDisplay({ suggestions, locationName }: LocalSugg
           {item.reasonWhySuggested && (
             <p className="text-sm text-primary/90 flex items-start">
               <ThumbsUp className="w-4 h-4 mr-2 mt-0.5 shrink-0" />
-              <span className="font-medium mr-1">Why it's a good fit:</span>{item.reasonWhySuggested}
+              <span className="font-medium mr-1">Why it&apos;s a good fit:</span>{item.reasonWhySuggested}
             </p>
           )}
 

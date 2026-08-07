@@ -149,9 +149,9 @@ export function PreferenceForm({ onPlanGenerated, onLoading, onError }: Preferen
 
   return (
     <Card className="shadow-xl">
-      <CardHeader>
+        <CardHeader>
         <CardTitle className="text-2xl font-headline text-primary">Plan Your Journey</CardTitle>
-        <CardDescription>Tell us your preferences, and we'll craft the perfect trip!</CardDescription>
+        <CardDescription>Tell us your preferences, and we will craft the perfect trip!</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -337,7 +337,7 @@ export function PreferenceForm({ onPlanGenerated, onLoading, onError }: Preferen
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select who you're travelling with" />
+                          <SelectValue placeholder="Select who you are travelling with" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
