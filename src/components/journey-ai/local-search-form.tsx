@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -8,14 +7,43 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { generateLocalTravelSuggestions, type GenerateLocalTravelSuggestionsInput, type GenerateLocalTravelSuggestionsOutput } from '@/ai/flows/generate-local-travel-suggestions';
-import { MapPin, CalendarDays, Clock, Car, TrainFront, Bike, PersonStanding, Globe, Sparkles, CalendarIcon } from 'lucide-react';
+import {
+  generateLocalTravelSuggestions,
+  type GenerateLocalTravelSuggestionsInput,
+  type GenerateLocalTravelSuggestionsOutput,
+} from '@/ai/flows/generate-local-travel-suggestions';
+import {
+  MapPin,
+  CalendarDays,
+  Clock,
+  Car,
+  TrainFront,
+  Bike,
+  PersonStanding,
+  Globe,
+  Sparkles,
+  CalendarIcon,
+  Loader2,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const transportOptions = [
@@ -29,29 +57,43 @@ const transportOptions = [
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-const FormSchema = z.object({
-  location: z.string().min(1, 'Location is required.'),
-  date: z.date({ required_error: "Date is required." }),
-  startTime: z.string().regex(timeRegex, 'Invalid time format. Use HH:MM (e.g., 09:00).'),
-  endTime: z.string().regex(timeRegex, 'Invalid time format. Use HH:MM (e.g., 18:00).'),
-  modeOfTransport: z.enum(['public', 'private', 'own', 'walking', 'cycling', 'any'], { required_error: "Mode of transport is required."}),
-  preferences: z.string().optional(),
-}).refine((data) => {
-    return data.endTime > data.startTime;
-}, {
-  message: "End time must be after start time.",
-  path: ["endTime"],
-});
+const FormSchema = z
+  .object({
+    location: z.string().min(1, 'Location is required.'),
+    date: z.date({ required_error: 'Date is required.' }),
+    startTime: z.string().regex(timeRegex, 'Invalid time format. Use HH:MM (e.g., 09:00).'),
+    endTime: z.string().regex(timeRegex, 'Invalid time format. Use HH:MM (e.g., 18:00).'),
+    modeOfTransport: z.enum(['public', 'private', 'own', 'walking', 'cycling', 'any'], {
+      required_error: 'Mode of transport is required.',
+    }),
+    preferences: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      return data.endTime > data.startTime;
+    },
+    {
+      message: 'End time must be after start time.',
+      path: ['endTime'],
+    },
+  );
 
 type LocalSearchFormValues = z.infer<typeof FormSchema>;
 
 interface LocalSearchFormProps {
-  onSuggestionsGenerated: (suggestions: GenerateLocalTravelSuggestionsOutput, location: string) => void;
+  onSuggestionsGenerated: (
+    suggestions: GenerateLocalTravelSuggestionsOutput,
+    location: string,
+  ) => void;
   onLoading: (loading: boolean) => void;
   onError: (error: string | null) => void;
 }
 
-export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: LocalSearchFormProps) {
+export function LocalSearchForm({
+  onSuggestionsGenerated,
+  onLoading,
+  onError,
+}: LocalSearchFormProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -77,11 +119,13 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
         date: new Date(),
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const onSubmit = async (data: LocalSearchFormValues) => {
+    setIsGenerating(true);
     onLoading(true);
     onError(null);
     try {
@@ -93,21 +137,26 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
         modeOfTransport: data.modeOfTransport,
         preferences: data.preferences,
       };
-      
+
       const result = await generateLocalTravelSuggestions(aiInput);
       onSuggestionsGenerated(result, data.location);
     } catch (err) {
       console.error('Error generating local travel suggestions:', err);
       let errorMessage = 'An unknown error occurred while generating suggestions.';
       if (err instanceof Error) {
-        if (err.message.includes('503 Service Unavailable') || err.message.toLowerCase().includes('model is overloaded')) {
-          errorMessage = 'The AI service is currently busy and couldn\'t process your request. Please try again in a few moments.';
+        if (
+          err.message.includes('503 Service Unavailable') ||
+          err.message.toLowerCase().includes('model is overloaded')
+        ) {
+          errorMessage =
+            "The AI service is currently busy and couldn't process your request. Please try again in a few moments.";
         } else {
           errorMessage = err.message;
         }
       }
       onError(errorMessage);
     } finally {
+      setIsGenerating(false);
       onLoading(false);
     }
   };
@@ -126,7 +175,9 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><MapPin className="w-4 h-4 mr-2 text-accent" /> Location</FormLabel>
+                  <FormLabel className="flex items-center">
+                    <MapPin className="w-4 h-4 mr-2 text-accent" /> Location
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="E.g., San Francisco, CA or 'near me'" {...field} />
                   </FormControl>
@@ -134,25 +185,31 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="flex items-center"><CalendarDays className="w-4 h-4 mr-2 text-accent" /> Date</FormLabel>
+                  <FormLabel className="flex items-center">
+                    <CalendarDays className="w-4 h-4 mr-2 text-accent" /> Date
+                  </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
-                          variant={"outline"}
+                          variant={'outline'}
                           className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            'w-full justify-start text-left font-normal',
+                            !field.value && 'text-muted-foreground',
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value && isClient ? format(field.value, "PPP") : <span>Pick a date</span>}
+                          {field.value && isClient ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -160,13 +217,15 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={(date) => { if(isClient && date) field.onChange(date); }}
+                        onSelect={(date) => {
+                          if (isClient && date) field.onChange(date);
+                        }}
                         disabled={(date) => {
                           if (!isClient) return true;
                           const targetDate = new Date(date);
-                          targetDate.setHours(0,0,0,0);
-                          const yesterday = new Date(new Date().setDate(new Date().getDate() -1));
-                          yesterday.setHours(0,0,0,0);
+                          targetDate.setHours(0, 0, 0, 0);
+                          const yesterday = new Date(new Date().setDate(new Date().getDate() - 1));
+                          yesterday.setHours(0, 0, 0, 0);
                           return targetDate < yesterday;
                         }}
                         initialFocus={isClient}
@@ -184,7 +243,9 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
                 name="startTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center"><Clock className="w-4 h-4 mr-2 text-accent" /> Start Time</FormLabel>
+                    <FormLabel className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-accent" /> Start Time
+                    </FormLabel>
                     <FormControl>
                       <Input type="time" placeholder="HH:MM" {...field} />
                     </FormControl>
@@ -197,7 +258,9 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
                 name="endTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center"><Clock className="w-4 h-4 mr-2 text-accent" /> End Time</FormLabel>
+                    <FormLabel className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-accent" /> End Time
+                    </FormLabel>
                     <FormControl>
                       <Input type="time" placeholder="HH:MM" {...field} />
                     </FormControl>
@@ -212,7 +275,9 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
               name="modeOfTransport"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Car className="w-4 h-4 mr-2 text-accent" /> Mode of Transport</FormLabel>
+                  <FormLabel className="flex items-center">
+                    <Car className="w-4 h-4 mr-2 text-accent" /> Mode of Transport
+                  </FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -221,11 +286,11 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
                     </FormControl>
                     <SelectContent>
                       {transportOptions.map((option) => (
-                         <SelectItem key={option.value} value={option.value}>
-                           <div className="flex items-center">
-                             <option.icon className="w-4 h-4 mr-2" /> {option.label}
-                           </div>
-                         </SelectItem>
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center">
+                            <option.icon className="w-4 h-4 mr-2" /> {option.label}
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -239,17 +304,37 @@ export function LocalSearchForm({ onSuggestionsGenerated, onLoading, onError }: 
               name="preferences"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Sparkles className="w-4 h-4 mr-2 text-accent" /> Preferences/Interests (Optional)</FormLabel>
+                  <FormLabel className="flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2 text-accent" /> Preferences/Interests
+                    (Optional)
+                  </FormLabel>
                   <FormControl>
-                    <Textarea placeholder="E.g., interested in history, quiet cafes, parks..." {...field} />
+                    <Textarea
+                      placeholder="E.g., interested in history, quiet cafes, parks..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={form.formState.isSubmitting || !isClient}>
-              {form.formState.isSubmitting ? 'Finding Suggestions...' : 'Get Local Suggestions'}
+            <Button
+              type="submit"
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-base font-semibold shadow-md flex items-center justify-center gap-2"
+              disabled={isGenerating || form.formState.isSubmitting || !isClient}
+            >
+              {isGenerating || form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Discovering Local Spots...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-1" />
+                  <span>Get Local Suggestions</span>
+                </>
+              )}
             </Button>
           </form>
         </Form>

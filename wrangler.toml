@@ -1,0 +1,9 @@
+name = "journey-ai"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = ".next"
+
+[site]
+bucket = ".next"
+
+[vars]
+NEXT_PUBLIC_APP_URL = "https://journey-ai.pages.dev"
