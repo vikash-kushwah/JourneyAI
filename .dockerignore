@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Next.js build output
+.next
+out
+
+# Git and CI
+.git
+.github
+.husky
+
+# Local env and tooling
+.env*
+.genkit
+.idx
+.vscode
+coverage
+*.tsbuildinfo
+
+# Tests and docs (not needed in production image)
+src/__tests__
+**/*.test.ts
+**/*.test.tsx
+docs
+screenshots
+
+# OS files
+.DS_Store
+Thumbs.db

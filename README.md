@@ -165,38 +165,38 @@ The prompts sent to the AI are carefully crafted within the flow files (e.g., `s
 
 Happy travels and planning!
 
-## Deploying: Cloudflare Pages (frontend) + Railway (Genkit backend)
+## Deploying
 
-This project can be split: deploy the Next.js frontend to Cloudflare Pages and run Genkit AI flows on Railway (or any small Docker host). This keeps the frontend free/edge-friendly while running the AI backend on a separate service.
+This app uses Next.js Server Actions with Genkit AI flows, so it must run on a Node.js server (static export is not supported).
 
-1) Frontend — Cloudflare Pages
-    - Push your repo to GitHub.
-    - In Cloudflare Pages, create a new project and connect your repo.
-    - Set the **Build command** to `npm run build` and the **Build directory** to `.` (Pages will detect Next). If you use experimental Next features, follow Cloudflare's Next.js on Pages guide.
-    - Add environment variables in the Pages dashboard (e.g. `NEXT_PUBLIC_APP_URL`).
-    - Deploy. Cloudflare offers free edge hosting with preview deployments.
+### Railway (recommended)
 
-2) Backend — Railway (Genkit flows)
-    - Railway supports direct `Dockerfile` deploys or Node projects. This repo contains a sample Dockerfile at `docker/genkit.Dockerfile`.
-    - Create a new Railway project and connect your GitHub repo, or choose to deploy via Docker.
-    - Set environment variables (e.g. `GOOGLE_API_KEY`, `NEXT_PUBLIC_APP_URL`) in Railway.
-    - If using the Dockerfile, Railway will build and run the container. Otherwise set the start command to `npm run genkit:start` and the port to `3000` (adjust if your flow uses a different port).
+The repo includes a production-ready `Dockerfile` and `railway.json`.
 
-3) Networking
-    - Set `NEXT_PUBLIC_APP_URL` to your Cloudflare Pages URL in the Railway env vars so Genkit flows can reference callback URLs if necessary.
+1. Push your repo to GitHub.
+2. Create a [Railway](https://railway.app) project and connect the repository.
+3. Railway will detect the `Dockerfile` and build the standalone Next.js app automatically.
+4. Add the required environment variable in Railway:
+   ```env
+   GOOGLE_API_KEY=your_google_ai_api_key
+   ```
+5. Deploy. Railway exposes the app on a public URL once the health check passes.
 
-4) Cost & Limits
-    - Cloudflare Pages free tier is generous for static/edge frontend usage.
-    - Railway offers free usage/credits but API/model calls to Genkit/Google will incur costs — monitor usage and set alerts.
+### Docker (any host)
 
-5) Local testing
-    - Run the frontend locally: `npm run dev`
-    - Run Genkit locally: `npm run genkit:dev`
-    - Use a tunnel (ngrok) if you need to connect a remote webhook or test production-like callbacks.
+```bash
+docker build -t journey-ai .
+docker run -p 3000:3000 -e GOOGLE_API_KEY=your_key journey-ai
+```
 
-If you want, I can:
-- Add a simple `cloudflare-pages` note file with exact Pages settings.
-- Add a Railway `service.json` or example `railway` template (requires Railway CLI auth).
-- Create a minimal health-check endpoint in the Genkit code so Railway can verify the service is up.
+### Firebase App Hosting
 
-Which would you like me to do next?
+An `apphosting.yaml` is included if you prefer Firebase App Hosting. Follow the [Firebase App Hosting docs](https://firebase.google.com/docs/app-hosting) and set `GOOGLE_API_KEY` in your backend environment.
+
+### CI / deploy verification
+
+GitHub Actions runs lint, typecheck, tests, and a production build on every push. Pushes to `main` also verify the Docker image builds successfully.
+
+---
+
+Happy travels and planning!

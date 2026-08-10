@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'JourneyAI',
-  description: 'AI-powered travel planner by Firebase Studio',
+  description: 'AI-powered travel planner',
 };
 
 export default function RootLayout({
