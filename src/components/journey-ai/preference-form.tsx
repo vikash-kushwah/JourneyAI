@@ -27,8 +27,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { callGenerateTravelPlan } from '@/lib/api-client';
 import {
-  generateTravelPlan,
   type GenerateTravelPlanInput,
   type GenerateTravelPlanOutput,
 } from '@/ai/flows/generate-travel-plan';
@@ -184,7 +184,7 @@ export function PreferenceForm({ onPlanGenerated, onLoading, onError }: Preferen
         targetCurrency: data.targetCurrency || undefined,
       };
 
-      const result = await generateTravelPlan(aiInput);
+      const result = await callGenerateTravelPlan(aiInput);
       onPlanGenerated(result, data.destination);
     } catch (err) {
       console.error('Error generating travel plan:', err);

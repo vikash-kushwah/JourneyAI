@@ -26,8 +26,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { callGenerateLocalTravelSuggestions } from '@/lib/api-client';
 import {
-  generateLocalTravelSuggestions,
   type GenerateLocalTravelSuggestionsInput,
   type GenerateLocalTravelSuggestionsOutput,
 } from '@/ai/flows/generate-local-travel-suggestions';
@@ -138,7 +138,7 @@ export function LocalSearchForm({
         preferences: data.preferences,
       };
 
-      const result = await generateLocalTravelSuggestions(aiInput);
+      const result = await callGenerateLocalTravelSuggestions(aiInput);
       onSuggestionsGenerated(result, data.location);
     } catch (err) {
       console.error('Error generating local travel suggestions:', err);
