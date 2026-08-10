@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateLocalTravelSuggestions } from '@/ai/flows/generate-local-travel-suggestions';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow long execution time
 
 export async function OPTIONS() {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { summarizeUserReviews } from '@/ai/flows/summarize-user-reviews';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function OPTIONS() {
