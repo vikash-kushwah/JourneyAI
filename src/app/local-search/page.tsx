@@ -24,9 +24,28 @@ export default function LocalSearchPage() {
 
   const { savedLocal } = useSavedLocal();
 
-  // Restore shared local guide from URL hash if opened via shared link
+  // Restore shared local guide from query param (?p=...) or URL hash (#local=...)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.startsWith('#local=')) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Check short share ID from query param (?p=... or ?share=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('p') || urlParams.get('share');
+    if (shareId) {
+      fetch(`/api/share?id=${encodeURIComponent(shareId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((entry) => {
+          if (entry && entry.data) {
+            setSuggestions(entry.data as GenerateLocalTravelSuggestionsOutput);
+            setSearchLocation(entry.location || '');
+            setError(null);
+          }
+        })
+        .catch((err) => console.warn('Could not load shared local guide from ID:', err));
+    }
+
+    // 2. Fallback to direct client-side URL hash (#local=...)
+    if (window.location.hash.startsWith('#local=')) {
       const rawHash = window.location.hash.slice(7);
       const decoded = decodeShareData<{
         suggestions: GenerateLocalTravelSuggestionsOutput;

@@ -18,6 +18,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { encodeShareData } from '@/lib/share-utils';
+import { ShareDialog } from '@/components/journey-ai/share-dialog';
 
 interface PlanActionsBarProps {
   plan: GenerateTravelPlanOutput;
@@ -30,8 +31,8 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
     useSavedPlans();
 
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [saveAnimation, setSaveAnimation] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const isSaved = isCurrentPlanSaved(plan, destinationName);
   const isLiked = isCurrentPlanLiked(plan, destinationName);
@@ -59,59 +60,32 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
     }
   };
 
-  const handleShare = async () => {
-    const title = plan.tripTitle || `Trip to ${destinationName}`;
-    const days = plan.dailyItinerary?.length || 0;
-    const costText = plan.estimatedCost
-      ? `\nEst. Budget: ${plan.currency} ${plan.estimatedCost.toLocaleString()}`
-      : '';
+  const title = plan.tripTitle || `Trip to ${destinationName}`;
+  const days = plan.dailyItinerary?.length || 0;
+  const costText = plan.estimatedCost
+    ? `\nEst. Budget: ${plan.currency} ${plan.estimatedCost.toLocaleString()}`
+    : '';
 
-    const dayHighlights = plan.dailyItinerary
-      ?.slice(0, 5)
-      .map((d) => `• Day ${d.day}: ${d.theme || d.date || 'Activities'}`)
-      .join('\n');
-    const highlightsSection = dayHighlights ? `\n\nHighlights:\n${dayHighlights}` : '';
+  const dayHighlights = plan.dailyItinerary
+    ?.slice(0, 5)
+    .map((d) => `• Day ${d.day}: ${d.theme || d.date || 'Activities'}`)
+    .join('\n');
+  const highlightsSection = dayHighlights ? `\n\nHighlights:\n${dayHighlights}` : '';
 
-    let shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    try {
-      const encoded = encodeShareData({ plan, destination: destinationName });
-      if (encoded && typeof window !== 'undefined') {
-        shareUrl = `${window.location.origin}${window.location.pathname}#plan=${encoded}`;
-      }
-    } catch {
-      // fallback to current url
+  const summaryText = `✈️ ${title} (${days} Days in ${destinationName})${costText}\n\n${plan.overallSummary || ''}${highlightsSection}`;
+
+  let fallbackHashUrl = typeof window !== 'undefined' ? window.location.href : '';
+  try {
+    const encoded = encodeShareData({ plan, destination: destinationName });
+    if (encoded && typeof window !== 'undefined') {
+      fallbackHashUrl = `${window.location.origin}${window.location.pathname}#plan=${encoded}`;
     }
+  } catch {
+    // fallback
+  }
 
-    const fullMessage = `✈️ ${title} (${days} Days in ${destinationName})${costText}\n\n${plan.overallSummary || ''}${highlightsSection}\n\n🔗 View Full Interactive Plan:\n${shareUrl}`;
-
-    // 1. Try native device share dialog
-    // IMPORTANT: Concatenate the link directly inside 'text' instead of passing 'url' separately.
-    // When both 'text' and 'url' are provided, apps like WhatsApp/iMessage discard the text and only share the url.
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({
-          title,
-          text: fullMessage,
-        });
-        return;
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          // User canceled share
-          return;
-        }
-      }
-    }
-
-    // 2. Fallback to clipboard copy
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(fullMessage);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch (err) {
-        console.error('Failed to copy to clipboard:', err);
-      }
-    }
+  const handleShare = () => {
+    setIsShareDialogOpen(true);
   };
 
   const handlePrint = () => {
@@ -257,20 +231,11 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
           variant="outline"
           size="sm"
           onClick={handleShare}
-          className="hover:bg-primary/5"
-          title="Copy itinerary summary to clipboard"
+          className="hover:bg-primary/5 hover:text-primary"
+          title="Share itinerary via WhatsApp, Link, etc."
         >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Share2 className="w-4 h-4 mr-1.5" />
-              Share
-            </>
-          )}
+          <Share2 className="w-4 h-4 mr-1.5" />
+          Share
         </Button>
 
         <Button
@@ -283,6 +248,17 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
           <Printer className="w-4 h-4" />
         </Button>
       </div>
+
+      <ShareDialog
+        open={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        title={title}
+        summary={summaryText}
+        type="plan"
+        destinationOrLocation={destinationName}
+        data={plan}
+        fallbackHashUrl={fallbackHashUrl}
+      />
     </div>
   );
 }

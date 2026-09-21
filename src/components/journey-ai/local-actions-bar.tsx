@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { encodeShareData } from '@/lib/share-utils';
+import { ShareDialog } from '@/components/journey-ai/share-dialog';
 
 interface LocalActionsBarProps {
   suggestions: GenerateLocalTravelSuggestionsOutput;
@@ -29,8 +30,8 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
     useSavedLocal();
 
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [saveAnimation, setSaveAnimation] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const isSaved = isCurrentLocalSaved(suggestions, locationName);
   const isLiked = isCurrentLocalLiked(suggestions, locationName);
@@ -57,54 +58,29 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
     }
   };
 
-  const handleShare = async () => {
-    const title = suggestions.title || `Local Spots in ${locationName}`;
-    const spots =
-      suggestions.suggestedItinerary
-        ?.map(
-          (s, idx) =>
-            `${idx + 1}. ${s.name} (${s.category}${s.specificType ? ` - ${s.specificType}` : ''})`,
-        )
-        .join('\n') || '';
+  const title = suggestions.title || `Local Spots in ${locationName}`;
+  const spots =
+    suggestions.suggestedItinerary
+      ?.map(
+        (s, idx) =>
+          `${idx + 1}. ${s.name} (${s.category}${s.specificType ? ` - ${s.specificType}` : ''})`,
+      )
+      .join('\n') || '';
 
-    let shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    try {
-      const encoded = encodeShareData({ suggestions, location: locationName });
-      if (encoded && typeof window !== 'undefined') {
-        shareUrl = `${window.location.origin}${window.location.pathname}#local=${encoded}`;
-      }
-    } catch {
-      // fallback
+  const summaryText = `📍 ${title}\nLocation: ${locationName}\n\n${suggestions.introduction || ''}\n\nTop Recommended Spots:\n${spots}`;
+
+  let fallbackHashUrl = typeof window !== 'undefined' ? window.location.href : '';
+  try {
+    const encoded = encodeShareData({ suggestions, location: locationName });
+    if (encoded && typeof window !== 'undefined') {
+      fallbackHashUrl = `${window.location.origin}${window.location.pathname}#local=${encoded}`;
     }
+  } catch {
+    // fallback
+  }
 
-    const fullMessage = `📍 ${title}\nLocation: ${locationName}\n\n${suggestions.introduction || ''}\n\nTop Recommended Spots:\n${spots}\n\n🔗 View Full Interactive Guide:\n${shareUrl}`;
-
-    // 1. Try native device share dialog
-    // Embed the link in text so messenger apps do not strip the content
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({
-          title,
-          text: fullMessage,
-        });
-        return;
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-      }
-    }
-
-    // 2. Fallback to clipboard
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(fullMessage);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch (err) {
-        console.error('Failed to copy to clipboard:', err);
-      }
-    }
+  const handleShare = () => {
+    setIsShareDialogOpen(true);
   };
 
   const handlePrint = () => {
@@ -194,20 +170,11 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
           variant="outline"
           size="sm"
           onClick={handleShare}
-          className="hover:bg-primary/5"
-          title="Copy guide summary to clipboard"
+          className="hover:bg-primary/5 hover:text-primary"
+          title="Share local guide via WhatsApp, Link, etc."
         >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Share2 className="w-4 h-4 mr-1.5" />
-              Share
-            </>
-          )}
+          <Share2 className="w-4 h-4 mr-1.5" />
+          Share
         </Button>
 
         <Button
@@ -220,6 +187,17 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
           <Printer className="w-4 h-4" />
         </Button>
       </div>
+
+      <ShareDialog
+        open={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        title={title}
+        summary={summaryText}
+        type="local"
+        destinationOrLocation={locationName}
+        data={suggestions}
+        fallbackHashUrl={fallbackHashUrl}
+      />
     </div>
   );
 }

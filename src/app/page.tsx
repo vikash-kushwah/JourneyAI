@@ -24,9 +24,28 @@ export default function JourneyAiPage() {
 
   const { savedPlans } = useSavedPlans();
 
-  // Restore shared plan from URL hash if opened via shared link
+  // Restore shared plan from query param (?p=...) or URL hash (#plan=...)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.startsWith('#plan=')) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Check short share ID from query param (?p=... or ?share=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('p') || urlParams.get('share');
+    if (shareId) {
+      fetch(`/api/share?id=${encodeURIComponent(shareId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((entry) => {
+          if (entry && entry.data) {
+            setPlan(entry.data as GenerateTravelPlanOutput);
+            setFormDestination(entry.destination || '');
+            setError(null);
+          }
+        })
+        .catch((err) => console.warn('Could not load shared plan from ID:', err));
+    }
+
+    // 2. Fallback to direct client-side URL hash (#plan=...)
+    if (window.location.hash.startsWith('#plan=')) {
       const rawHash = window.location.hash.slice(6);
       const decoded = decodeShareData<{
         plan: GenerateTravelPlanOutput;
