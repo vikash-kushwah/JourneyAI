@@ -58,16 +58,40 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
 
   const handleShare = async () => {
     const title = suggestions.title || `Local Spots in ${locationName}`;
-    const spots = suggestions.suggestedItinerary?.map((s) => s.name).join(', ') || '';
-    const summary = `${title}\n\n${suggestions.introduction || ''}\n\nTop Spots: ${spots}\n\nDiscovered with JourneyAI Local Explorer.`;
+    const spots =
+      suggestions.suggestedItinerary
+        ?.map(
+          (s, idx) =>
+            `${idx + 1}. ${s.name} (${s.category}${s.specificType ? ` - ${s.specificType}` : ''})`,
+        )
+        .join('\n') || '';
 
-    if (navigator.clipboard) {
+    const summary = `📍 ${title}\nLocation: ${locationName}\n\n${suggestions.introduction || ''}\n\nTop Recommended Spots:\n${spots}\n\nDiscovered with JourneyAI Local Explorer.`;
+
+    // 1. Try native device share dialog first
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title,
+          text: summary,
+          url: window.location.href,
+        });
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    // 2. Fallback to clipboard
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(summary);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {
-        // fallback
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
       }
     }
   };

@@ -61,15 +61,43 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
   const handleShare = async () => {
     const title = plan.tripTitle || `Trip to ${destinationName}`;
     const days = plan.dailyItinerary?.length || 0;
-    const summary = `${title} (${days} Days in ${destinationName})\n\n${plan.overallSummary || ''}\n\nGenerated with JourneyAI.`;
+    const costText = plan.estimatedCost
+      ? `\nEst. Budget: ${plan.currency} ${plan.estimatedCost.toLocaleString()}`
+      : '';
 
-    if (navigator.clipboard) {
+    const dayHighlights = plan.dailyItinerary
+      ?.slice(0, 5)
+      .map((d) => `• Day ${d.day}: ${d.theme || d.date || 'Activities'}`)
+      .join('\n');
+    const highlightsSection = dayHighlights ? `\n\nHighlights:\n${dayHighlights}` : '';
+
+    const summary = `✈️ ${title} (${days} Days in ${destinationName})${costText}\n\n${plan.overallSummary || ''}${highlightsSection}\n\nPlanned with JourneyAI.`;
+
+    // 1. Try native device share dialog first (mobile phones, macOS Safari, Windows Chrome)
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title,
+          text: summary,
+          url: window.location.href,
+        });
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // User closed the share menu without sharing
+          return;
+        }
+      }
+    }
+
+    // 2. Fallback to copying directly to clipboard
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(summary);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {
-        // fallback
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
       }
     }
   };
