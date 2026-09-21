@@ -38,10 +38,12 @@ import {
   MessageSquare,
   Route,
 } from 'lucide-react';
+import { LocalActionsBar } from '@/components/journey-ai/local-actions-bar';
 
 interface LocalSuggestionsDisplayProps {
   suggestions: GenerateLocalTravelSuggestionsOutput;
   locationName: string;
+  onOpenSaved?: () => void;
 }
 
 const getCategoryIcon = (category?: string, specificType?: string) => {
@@ -84,6 +86,7 @@ const getCategoryIcon = (category?: string, specificType?: string) => {
 export function LocalSuggestionsDisplay({
   suggestions,
   locationName,
+  onOpenSaved,
 }: LocalSuggestionsDisplayProps) {
   const renderActivity = (
     item:
@@ -189,88 +192,97 @@ export function LocalSuggestionsDisplay({
   };
 
   return (
-    <Card className="shadow-xl">
-      <CardHeader className="bg-secondary/30">
-        <CardTitle className="text-2xl md:text-3xl font-headline text-primary">
-          {suggestions.title || `Local Suggestions for ${locationName}`}
-        </CardTitle>
-        {suggestions.introduction && (
-          <CardDescription className="text-base mt-1">{suggestions.introduction}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="p-4 md:p-6 space-y-6">
-        {suggestions.suggestedItinerary && suggestions.suggestedItinerary.length > 0 ? (
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-foreground">
-              Your Suggested Itinerary:
-            </h3>
-            <ScrollArea className="h-[60vh] rounded-md p-1">
-              <div className="space-y-4">
-                {suggestions.suggestedItinerary.map((item, index) => (
-                  <Accordion
-                    key={`suggestion-${index}`}
-                    type="single"
-                    collapsible
-                    defaultValue="item-0"
-                  >
-                    <AccordionItem value={`item-${index}`} className="border-none p-0">
-                      <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]>svg]:hidden [&[data-state=closed]>svg]:hidden">
-                        {renderActivity(item)}
-                      </AccordionTrigger>
-                      <AccordionContent className="pt-0">
-                        {/* Content is already in renderActivity, this is just to make it expandable if needed in future */}
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              No specific suggestions available for these criteria. Try broadening your search!
-            </p>
-          </div>
-        )}
+    <div className="space-y-4">
+      {/* Top Action Bar: Like, Save, PDF, Share, Print */}
+      <LocalActionsBar
+        suggestions={suggestions}
+        locationName={locationName}
+        onOpenSaved={onOpenSaved}
+      />
 
-        {suggestions.overallTimeManagementNotes && (
-          <div>
-            <Separator className="my-4" />
-            <h3 className="text-lg font-semibold flex items-center mb-2 text-foreground">
-              <Timer className="w-5 h-5 mr-2 text-accent" /> Time Management Notes
-            </h3>
-            <FormattedMarkdownText
-              text={suggestions.overallTimeManagementNotes}
-              className="text-sm text-muted-foreground bg-secondary/30 p-3 rounded-md"
-            />
-          </div>
-        )}
+      <Card className="shadow-xl print:shadow-none print:border-none">
+        <CardHeader className="bg-secondary/30">
+          <CardTitle className="text-2xl md:text-3xl font-headline text-primary">
+            {suggestions.title || `Local Suggestions for ${locationName}`}
+          </CardTitle>
+          {suggestions.introduction && (
+            <CardDescription className="text-base mt-1">{suggestions.introduction}</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent className="p-4 md:p-6 space-y-6">
+          {suggestions.suggestedItinerary && suggestions.suggestedItinerary.length > 0 ? (
+            <div>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">
+                Your Suggested Itinerary:
+              </h3>
+              <ScrollArea className="h-[60vh] rounded-md p-1">
+                <div className="space-y-4">
+                  {suggestions.suggestedItinerary.map((item, index) => (
+                    <Accordion
+                      key={`suggestion-${index}`}
+                      type="single"
+                      collapsible
+                      defaultValue="item-0"
+                    >
+                      <AccordionItem value={`item-${index}`} className="border-none p-0">
+                        <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]>svg]:hidden [&[data-state=closed]>svg]:hidden">
+                          {renderActivity(item)}
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-0">
+                          {/* Content is already in renderActivity, this is just to make it expandable if needed in future */}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                No specific suggestions available for these criteria. Try broadening your search!
+              </p>
+            </div>
+          )}
 
-        {suggestions.transportationAdvice && (
-          <div>
-            <Separator className="my-4" />
-            <h3 className="text-lg font-semibold flex items-center mb-2 text-foreground">
-              <Route className="w-5 h-5 mr-2 text-accent" /> Transportation Advice
-            </h3>
-            <FormattedMarkdownText
-              text={suggestions.transportationAdvice}
-              className="text-sm text-muted-foreground bg-secondary/30 p-3 rounded-md"
-            />
-          </div>
-        )}
+          {suggestions.overallTimeManagementNotes && (
+            <div>
+              <Separator className="my-4" />
+              <h3 className="text-lg font-semibold flex items-center mb-2 text-foreground">
+                <Timer className="w-5 h-5 mr-2 text-accent" /> Time Management Notes
+              </h3>
+              <FormattedMarkdownText
+                text={suggestions.overallTimeManagementNotes}
+                className="text-sm text-muted-foreground bg-secondary/30 p-3 rounded-md"
+              />
+            </div>
+          )}
 
-        {suggestions.alternativeSuggestion && (
-          <div>
-            <Separator className="my-4" />
-            <h3 className="text-lg font-semibold mb-3 text-foreground">
-              Looking for an Alternative?
-            </h3>
-            {renderActivity(suggestions.alternativeSuggestion, true)}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {suggestions.transportationAdvice && (
+            <div>
+              <Separator className="my-4" />
+              <h3 className="text-lg font-semibold flex items-center mb-2 text-foreground">
+                <Route className="w-5 h-5 mr-2 text-accent" /> Transportation Advice
+              </h3>
+              <FormattedMarkdownText
+                text={suggestions.transportationAdvice}
+                className="text-sm text-muted-foreground bg-secondary/30 p-3 rounded-md"
+              />
+            </div>
+          )}
+
+          {suggestions.alternativeSuggestion && (
+            <div>
+              <Separator className="my-4" />
+              <h3 className="text-lg font-semibold mb-3 text-foreground">
+                Looking for an Alternative?
+              </h3>
+              {renderActivity(suggestions.alternativeSuggestion, true)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

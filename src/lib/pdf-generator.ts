@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { GenerateTravelPlanOutput } from '@/ai/flows/generate-travel-plan';
+import type { GenerateLocalTravelSuggestionsOutput } from '@/ai/flows/generate-local-travel-suggestions';
 
 export function exportPlanToPdf(plan: GenerateTravelPlanOutput, destinationName: string) {
   const doc = new jsPDF({
@@ -309,4 +310,227 @@ export function exportPlanToPdf(plan: GenerateTravelPlanOutput, destinationName:
   const cleanDestination = destinationName.replace(/[^a-zA-Z0-9_-]/g, '_');
   const filename = `JourneyAI_${cleanDestination}_Itinerary.pdf`;
   doc.save(filename);
+}
+
+export function exportLocalSuggestionsToPdf(
+  suggestions: GenerateLocalTravelSuggestionsOutput,
+  locationName: string,
+) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 16;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  const checkPageBreak = (neededHeight: number) => {
+    if (y + neededHeight > pageHeight - margin - 15) {
+      doc.addPage();
+      y = margin + 5;
+      renderPageHeader();
+    }
+  };
+
+  const renderPageHeader = () => {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text(`JourneyAI Local Explorer | ${suggestions.title || locationName}`, margin, margin);
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
+    y = margin + 7;
+  };
+
+  // Header Banner
+  doc.setFillColor(30, 41, 59); // Slate 800
+  doc.roundedRect(margin, y, contentWidth, 34, 3, 3, 'F');
+
+  doc.setTextColor(248, 250, 252);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('JOURNEYAI • LOCAL EXPLORER GUIDE', margin + 6, y + 8);
+
+  doc.setFontSize(15);
+  const title = suggestions.title || `Local Spots in ${locationName}`;
+  const splitTitle = doc.splitTextToSize(title, contentWidth - 12);
+  doc.text(splitTitle[0] || title, margin + 6, y + 17);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const spotsCount = suggestions.suggestedItinerary?.length || 0;
+  const metaText = `Location: ${locationName}  |  Recommended Spots: ${spotsCount} Places`;
+  doc.text(metaText, margin + 6, y + 27);
+
+  y += 40;
+
+  // Introduction
+  if (suggestions.introduction) {
+    checkPageBreak(25);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Overview', margin, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(71, 85, 105);
+    const introLines = doc.splitTextToSize(suggestions.introduction, contentWidth);
+    doc.text(introLines, margin, y);
+    y += introLines.length * 4.5 + 4;
+  }
+
+  // Suggested Activities
+  if (suggestions.suggestedItinerary && suggestions.suggestedItinerary.length > 0) {
+    checkPageBreak(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Recommended Local Activities & Places', margin, y);
+    y += 6;
+
+    suggestions.suggestedItinerary.forEach((item, index) => {
+      checkPageBreak(35);
+
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(margin, y, contentWidth, 8, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+
+      const itemTitle = `${index + 1}. ${item.name} (${item.category}${item.specificType ? ` - ${item.specificType}` : ''})`;
+      doc.text(itemTitle, margin + 3, y + 5.5);
+      y += 11;
+
+      // Meta details (Duration, Address, Hours, Cost, Booking)
+      const meta = [
+        item.estimatedDuration ? `Duration: ${item.estimatedDuration}` : '',
+        item.openingHours ? `Hours: ${item.openingHours}` : '',
+        item.estimatedCost ? `Cost: ${item.estimatedCost}` : '',
+        item.bookingNeeded ? `Booking: ${item.bookingNeeded}` : '',
+      ]
+        .filter(Boolean)
+        .join('  |  ');
+
+      if (meta) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(79, 70, 229);
+        doc.text(meta, margin + 3, y);
+        y += 4;
+      }
+
+      if (item.address) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Location: ${item.address}`, margin + 3, y);
+        y += 4;
+      }
+
+      if (item.description) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(71, 85, 105);
+        const descLines = doc.splitTextToSize(item.description, contentWidth - 6);
+        doc.text(descLines, margin + 3, y);
+        y += descLines.length * 3.8 + 2;
+      }
+
+      if (item.reasonWhySuggested) {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(14, 116, 144);
+        const fitLines = doc.splitTextToSize(
+          `Why it fits: ${item.reasonWhySuggested}`,
+          contentWidth - 6,
+        );
+        doc.text(fitLines, margin + 3, y);
+        y += fitLines.length * 3.6 + 2;
+      }
+
+      y += 3;
+    });
+  }
+
+  // Alternative Option
+  if (suggestions.alternativeSuggestion) {
+    const alt = suggestions.alternativeSuggestion;
+    checkPageBreak(30);
+
+    doc.setFillColor(254, 243, 199); // Amber 100
+    doc.roundedRect(margin, y, contentWidth, 8, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(180, 83, 9); // Amber 700
+    doc.text(`Alternative Spot: ${alt.name}`, margin + 3, y + 5.5);
+    y += 11;
+
+    if (alt.description) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      const altLines = doc.splitTextToSize(alt.description, contentWidth - 6);
+      doc.text(altLines, margin + 3, y);
+      y += altLines.length * 3.8 + 3;
+    }
+  }
+
+  // Time Management Notes
+  if (suggestions.overallTimeManagementNotes) {
+    checkPageBreak(25);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Time Management & Route Notes', margin, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    const tm = doc.splitTextToSize(suggestions.overallTimeManagementNotes, contentWidth);
+    doc.text(tm, margin, y);
+    y += tm.length * 4 + 3;
+  }
+
+  // Transportation Advice
+  if (suggestions.transportationAdvice) {
+    checkPageBreak(25);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Transportation Advice', margin, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    const ta = doc.splitTextToSize(suggestions.transportationAdvice, contentWidth);
+    doc.text(ta, margin, y);
+    y += ta.length * 4 + 3;
+  }
+
+  // Footer for all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Generated by JourneyAI Local Explorer', margin, pageHeight - 6);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 6);
+  }
+
+  const cleanLoc = locationName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  doc.save(`JourneyAI_Local_${cleanLoc}_Guide.pdf`);
 }
