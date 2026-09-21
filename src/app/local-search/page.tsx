@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { GenerateLocalTravelSuggestionsOutput } from '@/ai/flows/generate-local-travel-suggestions';
 import { LocalSearchForm } from '@/components/journey-ai/local-search-form';
 import { LocalSuggestionsDisplay } from '@/components/journey-ai/local-suggestions-display';
 import { SavedLocalSheet } from '@/components/journey-ai/saved-local-sheet';
 import { useSavedLocal } from '@/hooks/use-saved-local';
+import { decodeShareData } from '@/lib/share-utils';
 import { LoadingSpinner } from '@/components/journey-ai/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,22 @@ export default function LocalSearchPage() {
   const [isSavedLocalOpen, setIsSavedLocalOpen] = useState(false);
 
   const { savedLocal } = useSavedLocal();
+
+  // Restore shared local guide from URL hash if opened via shared link
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#local=')) {
+      const rawHash = window.location.hash.slice(7);
+      const decoded = decodeShareData<{
+        suggestions: GenerateLocalTravelSuggestionsOutput;
+        location: string;
+      }>(rawHash);
+      if (decoded && decoded.suggestions) {
+        setSuggestions(decoded.suggestions);
+        setSearchLocation(decoded.location || '');
+        setError(null);
+      }
+    }
+  }, []);
 
   const handleSuggestionsGenerated = (
     newSuggestions: GenerateLocalTravelSuggestionsOutput,

@@ -16,6 +16,7 @@ import {
   Check,
   Loader2,
 } from 'lucide-react';
+import { encodeShareData } from '@/lib/share-utils';
 
 interface LocalActionsBarProps {
   suggestions: GenerateLocalTravelSuggestionsOutput;
@@ -66,15 +67,25 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
         )
         .join('\n') || '';
 
-    const summary = `📍 ${title}\nLocation: ${locationName}\n\n${suggestions.introduction || ''}\n\nTop Recommended Spots:\n${spots}\n\nDiscovered with JourneyAI Local Explorer.`;
+    let shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      const encoded = encodeShareData({ suggestions, location: locationName });
+      if (encoded && typeof window !== 'undefined') {
+        shareUrl = `${window.location.origin}${window.location.pathname}#local=${encoded}`;
+      }
+    } catch {
+      // fallback
+    }
 
-    // 1. Try native device share dialog first
+    const fullMessage = `📍 ${title}\nLocation: ${locationName}\n\n${suggestions.introduction || ''}\n\nTop Recommended Spots:\n${spots}\n\n🔗 View Full Interactive Guide:\n${shareUrl}`;
+
+    // 1. Try native device share dialog
+    // Embed the link in text so messenger apps do not strip the content
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title,
-          text: summary,
-          url: window.location.href,
+          text: fullMessage,
         });
         return;
       } catch (err: unknown) {
@@ -87,7 +98,7 @@ export function LocalActionsBar({ suggestions, locationName, onOpenSaved }: Loca
     // 2. Fallback to clipboard
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(summary);
+        await navigator.clipboard.writeText(fullMessage);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } catch (err) {

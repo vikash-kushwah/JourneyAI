@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { GenerateTravelPlanOutput } from '@/ai/flows/generate-travel-plan';
 import { PreferenceForm } from '@/components/journey-ai/preference-form';
@@ -8,6 +8,7 @@ import { PlanDisplay } from '@/components/journey-ai/plan-display';
 import { LoadingSpinner } from '@/components/journey-ai/loading-spinner';
 import { SavedPlansSheet } from '@/components/journey-ai/saved-plans-sheet';
 import { useSavedPlans } from '@/hooks/use-saved-plans';
+import { decodeShareData } from '@/lib/share-utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,22 @@ export default function JourneyAiPage() {
   const [isSavedPlansOpen, setIsSavedPlansOpen] = useState(false);
 
   const { savedPlans } = useSavedPlans();
+
+  // Restore shared plan from URL hash if opened via shared link
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#plan=')) {
+      const rawHash = window.location.hash.slice(6);
+      const decoded = decodeShareData<{
+        plan: GenerateTravelPlanOutput;
+        destination: string;
+      }>(rawHash);
+      if (decoded && decoded.plan) {
+        setPlan(decoded.plan);
+        setFormDestination(decoded.destination || '');
+        setError(null);
+      }
+    }
+  }, []);
 
   const handlePlanGenerated = (newPlan: GenerateTravelPlanOutput, destination: string) => {
     setPlan(newPlan);

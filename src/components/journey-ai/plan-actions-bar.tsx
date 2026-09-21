@@ -17,6 +17,7 @@ import {
   Loader2,
   Calendar,
 } from 'lucide-react';
+import { encodeShareData } from '@/lib/share-utils';
 
 interface PlanActionsBarProps {
   plan: GenerateTravelPlanOutput;
@@ -71,29 +72,40 @@ export function PlanActionsBar({ plan, destinationName, onOpenSavedPlans }: Plan
       .join('\n');
     const highlightsSection = dayHighlights ? `\n\nHighlights:\n${dayHighlights}` : '';
 
-    const summary = `✈️ ${title} (${days} Days in ${destinationName})${costText}\n\n${plan.overallSummary || ''}${highlightsSection}\n\nPlanned with JourneyAI.`;
+    let shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      const encoded = encodeShareData({ plan, destination: destinationName });
+      if (encoded && typeof window !== 'undefined') {
+        shareUrl = `${window.location.origin}${window.location.pathname}#plan=${encoded}`;
+      }
+    } catch {
+      // fallback to current url
+    }
 
-    // 1. Try native device share dialog first (mobile phones, macOS Safari, Windows Chrome)
+    const fullMessage = `✈️ ${title} (${days} Days in ${destinationName})${costText}\n\n${plan.overallSummary || ''}${highlightsSection}\n\n🔗 View Full Interactive Plan:\n${shareUrl}`;
+
+    // 1. Try native device share dialog
+    // IMPORTANT: Concatenate the link directly inside 'text' instead of passing 'url' separately.
+    // When both 'text' and 'url' are provided, apps like WhatsApp/iMessage discard the text and only share the url.
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title,
-          text: summary,
-          url: window.location.href,
+          text: fullMessage,
         });
         return;
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
-          // User closed the share menu without sharing
+          // User canceled share
           return;
         }
       }
     }
 
-    // 2. Fallback to copying directly to clipboard
+    // 2. Fallback to clipboard copy
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(summary);
+        await navigator.clipboard.writeText(fullMessage);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } catch (err) {
