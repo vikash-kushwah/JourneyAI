@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
-      }
+      },
     );
   }
 }

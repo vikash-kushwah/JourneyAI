@@ -1,6 +1,15 @@
-import type { GenerateTravelPlanInput, GenerateTravelPlanOutput } from '@/ai/flows/generate-travel-plan';
-import type { GenerateLocalTravelSuggestionsInput, GenerateLocalTravelSuggestionsOutput } from '@/ai/flows/generate-local-travel-suggestions';
-import type { SummarizeUserReviewsInput, SummarizeUserReviewsOutput } from '@/ai/flows/summarize-user-reviews';
+import type {
+  GenerateTravelPlanInput,
+  GenerateTravelPlanOutput,
+} from '@/ai/flows/generate-travel-plan';
+import type {
+  GenerateLocalTravelSuggestionsInput,
+  GenerateLocalTravelSuggestionsOutput,
+} from '@/ai/flows/generate-local-travel-suggestions';
+import type {
+  SummarizeUserReviewsInput,
+  SummarizeUserReviewsOutput,
+} from '@/ai/flows/summarize-user-reviews';
 import { generateTravelPlan } from '@/ai/flows/generate-travel-plan';
 import { generateLocalTravelSuggestions } from '@/ai/flows/generate-local-travel-suggestions';
 import { summarizeUserReviews } from '@/ai/flows/summarize-user-reviews';
@@ -12,7 +21,9 @@ const getBackendUrl = () => {
   return process.env.NEXT_PUBLIC_BACKEND_URL || '';
 };
 
-export async function callGenerateTravelPlan(input: GenerateTravelPlanInput): Promise<GenerateTravelPlanOutput> {
+export async function callGenerateTravelPlan(
+  input: GenerateTravelPlanInput,
+): Promise<GenerateTravelPlanOutput> {
   const backendUrl = getBackendUrl();
   if (backendUrl) {
     const res = await fetch(`${backendUrl}/api/generate-plan`, {
@@ -29,7 +40,9 @@ export async function callGenerateTravelPlan(input: GenerateTravelPlanInput): Pr
   return await generateTravelPlan(input);
 }
 
-export async function callGenerateLocalTravelSuggestions(input: GenerateLocalTravelSuggestionsInput): Promise<GenerateLocalTravelSuggestionsOutput> {
+export async function callGenerateLocalTravelSuggestions(
+  input: GenerateLocalTravelSuggestionsInput,
+): Promise<GenerateLocalTravelSuggestionsOutput> {
   const backendUrl = getBackendUrl();
   if (backendUrl) {
     const res = await fetch(`${backendUrl}/api/generate-local-suggestions`, {
@@ -39,14 +52,18 @@ export async function callGenerateLocalTravelSuggestions(input: GenerateLocalTra
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Failed to generate local travel suggestions (${res.status})`);
+      throw new Error(
+        errData.error || `Failed to generate local travel suggestions (${res.status})`,
+      );
     }
     return await res.json();
   }
   return await generateLocalTravelSuggestions(input);
 }
 
-export async function callSummarizeUserReviews(input: SummarizeUserReviewsInput): Promise<SummarizeUserReviewsOutput> {
+export async function callSummarizeUserReviews(
+  input: SummarizeUserReviewsInput,
+): Promise<SummarizeUserReviewsOutput> {
   const backendUrl = getBackendUrl();
   if (backendUrl) {
     const res = await fetch(`${backendUrl}/api/summarize-reviews`, {

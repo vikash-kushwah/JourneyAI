@@ -6,19 +6,31 @@ import type { GenerateTravelPlanOutput } from '@/ai/flows/generate-travel-plan';
 import { PreferenceForm } from '@/components/journey-ai/preference-form';
 import { PlanDisplay } from '@/components/journey-ai/plan-display';
 import { LoadingSpinner } from '@/components/journey-ai/loading-spinner';
+import { SavedPlansSheet } from '@/components/journey-ai/saved-plans-sheet';
+import { useSavedPlans } from '@/hooks/use-saved-plans';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { NavButton } from '@/components/journey-ai/nav-button';
-import { PlaneTakeoff, AlertTriangle, Compass } from 'lucide-react';
+import { PlaneTakeoff, AlertTriangle, Compass, Bookmark } from 'lucide-react';
 
 export default function JourneyAiPage() {
   const [plan, setPlan] = useState<GenerateTravelPlanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formDestination, setFormDestination] = useState<string>('');
+  const [isSavedPlansOpen, setIsSavedPlansOpen] = useState(false);
+
+  const { savedPlans } = useSavedPlans();
 
   const handlePlanGenerated = (newPlan: GenerateTravelPlanOutput, destination: string) => {
     setPlan(newPlan);
+    setFormDestination(destination);
+    setError(null);
+  };
+
+  const handleSelectSavedPlan = (savedPlan: GenerateTravelPlanOutput, destination: string) => {
+    setPlan(savedPlan);
     setFormDestination(destination);
     setError(null);
   };
@@ -36,7 +48,7 @@ export default function JourneyAiPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="py-8 bg-primary shadow-md">
+      <header className="py-8 bg-primary shadow-md print:hidden">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-center sm:text-left">
@@ -47,20 +59,35 @@ export default function JourneyAiPage() {
                 Your Personal AI Travel Planner
               </p>
             </div>
-            <NavButton
-              href="/local-search"
-              icon={<Compass className="mr-2 h-5 w-5" />}
-              className="bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
-            >
-              Explore Local Activities
-            </NavButton>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsSavedPlansOpen(true)}
+                className="bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground border-primary-foreground/20"
+              >
+                <Bookmark className="mr-2 h-4 w-4" />
+                Saved Trips
+                {savedPlans.length > 0 && (
+                  <span className="ml-2 bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full font-mono font-semibold">
+                    {savedPlans.length}
+                  </span>
+                )}
+              </Button>
+              <NavButton
+                href="/local-search"
+                icon={<Compass className="mr-2 h-5 w-5" />}
+                className="bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+              >
+                Explore Local Activities
+              </NavButton>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 print:hidden">
             <PreferenceForm
               onPlanGenerated={handlePlanGenerated}
               onLoading={handleLoadingChange}
@@ -68,7 +95,7 @@ export default function JourneyAiPage() {
             />
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 print:col-span-5 print:w-full">
             {isLoading && (
               <Card className="shadow-lg">
                 <CardContent className="p-6">
@@ -85,7 +112,11 @@ export default function JourneyAiPage() {
             )}
             {plan && !isLoading && !error && (
               <div className="space-y-8">
-                <PlanDisplay plan={plan} destinationName={formDestination} />
+                <PlanDisplay
+                  plan={plan}
+                  destinationName={formDestination}
+                  onOpenSavedPlans={() => setIsSavedPlansOpen(true)}
+                />
               </div>
             )}
             {!plan && !isLoading && !error && (
@@ -107,7 +138,14 @@ export default function JourneyAiPage() {
           </div>
         </div>
       </main>
-      <footer className="py-6 mt-12 border-t border-border/50">
+
+      <SavedPlansSheet
+        open={isSavedPlansOpen}
+        onOpenChange={setIsSavedPlansOpen}
+        onSelectPlan={handleSelectSavedPlan}
+      />
+
+      <footer className="py-6 mt-12 border-t border-border/50 print:hidden">
         <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} JourneyAI. Powered by AI and imagination.</p>
         </div>
