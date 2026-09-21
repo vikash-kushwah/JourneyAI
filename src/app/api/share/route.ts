@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -14,12 +15,19 @@ interface SharePayload {
 }
 
 const memoryStore = new Map<string, SharePayload>();
-const STORAGE_FILE = path.join(process.cwd(), '.next', 'shares_cache.json');
+const STORAGE_FILE = path.join(os.tmpdir(), 'journeyai_shares_cache.json');
+const LEGACY_STORAGE_FILE = path.join(process.cwd(), '.next', 'shares_cache.json');
 
 function initCache() {
   try {
-    if (fs.existsSync(STORAGE_FILE)) {
-      const content = fs.readFileSync(STORAGE_FILE, 'utf-8');
+    const fileToRead = fs.existsSync(STORAGE_FILE)
+      ? STORAGE_FILE
+      : fs.existsSync(LEGACY_STORAGE_FILE)
+        ? LEGACY_STORAGE_FILE
+        : null;
+
+    if (fileToRead) {
+      const content = fs.readFileSync(fileToRead, 'utf-8');
       const parsed = JSON.parse(content) as Record<string, SharePayload>;
       for (const [k, v] of Object.entries(parsed)) {
         memoryStore.set(k, v);
@@ -35,10 +43,6 @@ function persistCache() {
     const obj: Record<string, SharePayload> = {};
     for (const [k, v] of memoryStore.entries()) {
       obj[k] = v;
-    }
-    const dir = path.dirname(STORAGE_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(STORAGE_FILE, JSON.stringify(obj));
   } catch (err) {

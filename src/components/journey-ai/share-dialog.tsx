@@ -10,7 +10,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Share2, Check, Copy, MessageCircle, Mail, Send, Loader2, Smartphone } from 'lucide-react';
+import {
+  Share2,
+  Check,
+  Copy,
+  MessageCircle,
+  Mail,
+  Send,
+  Loader2,
+  Smartphone,
+  AlertCircle,
+  ExternalLink,
+} from 'lucide-react';
 
 interface ShareDialogProps {
   open: boolean;
@@ -37,6 +48,15 @@ export function ShareDialog({
   const [isGeneratingShortUrl, setIsGeneratingShortUrl] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsLocalhost(
+        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+      );
+    }
+  }, []);
 
   // Generate short link on dialog open
   useEffect(() => {
@@ -88,10 +108,21 @@ export function ShareDialog({
 
   const activeUrl = shortUrl || fallbackHashUrl;
 
-  // WhatsApp share
+  const buildWhatsAppMessage = () => {
+    return `✈️ *${title}*\n\n${summary}\n\n🔗 *View Interactive Plan:* ${activeUrl}`;
+  };
+
+  // WhatsApp Universal Share (opens app on mobile, or redirects to WhatsApp Web on PC)
   const handleWhatsAppShare = () => {
-    const message = `${summary}\n\n🔗 View Itinerary: ${activeUrl}`;
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    const message = buildWhatsAppMessage();
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // WhatsApp Web directly (for desktop users preferring browser tab)
+  const handleWhatsAppWebShare = () => {
+    const message = buildWhatsAppMessage();
+    const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -161,20 +192,56 @@ export function ShareDialog({
           </div>
           <DialogDescription className="text-sm">
             Share this itinerary directly to WhatsApp, copy the link, or export details to your
-            friends.
+            travel companions.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Direct WhatsApp Share Button */}
-          <Button
-            type="button"
-            onClick={handleWhatsAppShare}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 h-11 text-sm shadow-sm flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-5 h-5 fill-white" />
-            Share on WhatsApp
-          </Button>
+          {/* Localhost awareness alert */}
+          {isLocalhost && (
+            <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-900 dark:text-amber-200">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-semibold">Localhost Notice: </span>
+                  Links created on{' '}
+                  <code className="font-mono bg-amber-200/50 dark:bg-amber-900/50 px-1 rounded">
+                    localhost
+                  </code>{' '}
+                  only open on this computer. Once deployed to Railway, shared links will open for
+                  anyone worldwide.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Direct WhatsApp Share Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={handleWhatsAppShare}
+              disabled={isGeneratingShortUrl}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 h-11 text-sm shadow-sm flex items-center justify-center gap-2"
+            >
+              {isGeneratingShortUrl ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <MessageCircle className="w-5 h-5 fill-white" />
+              )}
+              Share on WhatsApp
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleWhatsAppWebShare}
+              disabled={isGeneratingShortUrl}
+              className="w-full border-emerald-600/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-medium py-2.5 h-11 text-sm flex items-center justify-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              WhatsApp Web
+            </Button>
+          </div>
 
           {/* Social / Email Row */}
           <div className="grid grid-cols-2 gap-2.5">

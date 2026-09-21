@@ -23,6 +23,9 @@ export default function LocalSearchPage() {
   const [isSavedLocalOpen, setIsSavedLocalOpen] = useState(false);
 
   const { savedLocal } = useSavedLocal();
+  const [loadingText, setLoadingText] = useState(
+    'Our AI is finding the best local spots for you...',
+  );
 
   // Restore shared local guide from query param (?p=...) or URL hash (#local=...)
   useEffect(() => {
@@ -32,16 +35,36 @@ export default function LocalSearchPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('p') || urlParams.get('share');
     if (shareId) {
+      setIsLoading(true);
+      setLoadingText('Loading shared local guide...');
       fetch(`/api/share?id=${encodeURIComponent(shareId)}`)
-        .then((res) => (res.ok ? res.json() : null))
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(
+              res.status === 404
+                ? 'Shared local guide not found or has expired.'
+                : 'Failed to load shared guide.',
+            );
+          }
+          return res.json();
+        })
         .then((entry) => {
           if (entry && entry.data) {
             setSuggestions(entry.data as GenerateLocalTravelSuggestionsOutput);
             setSearchLocation(entry.location || '');
             setError(null);
+          } else {
+            setError('Shared local guide data could not be parsed.');
           }
         })
-        .catch((err) => console.warn('Could not load shared local guide from ID:', err));
+        .catch((err) => {
+          console.warn('Could not load shared local guide from ID:', err);
+          setError(err instanceof Error ? err.message : 'Could not load shared local guide.');
+        })
+        .finally(() => {
+          setIsLoading(false);
+          setLoadingText('Our AI is finding the best local spots for you...');
+        });
     }
 
     // 2. Fallback to direct client-side URL hash (#local=...)
@@ -141,10 +164,7 @@ export default function LocalSearchPage() {
             {isLoading && (
               <Card className="shadow-lg">
                 <CardContent className="p-6">
-                  <LoadingSpinner
-                    text="Our AI is finding the best local spots for you..."
-                    size={60}
-                  />
+                  <LoadingSpinner text={loadingText} size={60} />
                 </CardContent>
               </Card>
             )}

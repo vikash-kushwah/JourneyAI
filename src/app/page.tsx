@@ -23,6 +23,7 @@ export default function JourneyAiPage() {
   const [isSavedPlansOpen, setIsSavedPlansOpen] = useState(false);
 
   const { savedPlans } = useSavedPlans();
+  const [loadingText, setLoadingText] = useState('Our AI is crafting your perfect journey...');
 
   // Restore shared plan from query param (?p=...) or URL hash (#plan=...)
   useEffect(() => {
@@ -32,16 +33,36 @@ export default function JourneyAiPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('p') || urlParams.get('share');
     if (shareId) {
+      setIsLoading(true);
+      setLoadingText('Loading shared travel itinerary...');
       fetch(`/api/share?id=${encodeURIComponent(shareId)}`)
-        .then((res) => (res.ok ? res.json() : null))
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(
+              res.status === 404
+                ? 'Shared itinerary link not found or has expired.'
+                : 'Failed to load shared trip.',
+            );
+          }
+          return res.json();
+        })
         .then((entry) => {
           if (entry && entry.data) {
             setPlan(entry.data as GenerateTravelPlanOutput);
             setFormDestination(entry.destination || '');
             setError(null);
+          } else {
+            setError('Shared itinerary data could not be parsed.');
           }
         })
-        .catch((err) => console.warn('Could not load shared plan from ID:', err));
+        .catch((err) => {
+          console.warn('Could not load shared plan from ID:', err);
+          setError(err instanceof Error ? err.message : 'Could not load shared itinerary.');
+        })
+        .finally(() => {
+          setIsLoading(false);
+          setLoadingText('Our AI is crafting your perfect journey...');
+        });
     }
 
     // 2. Fallback to direct client-side URL hash (#plan=...)
@@ -135,7 +156,7 @@ export default function JourneyAiPage() {
             {isLoading && (
               <Card className="shadow-lg">
                 <CardContent className="p-6">
-                  <LoadingSpinner text="Our AI is crafting your perfect journey..." size={60} />
+                  <LoadingSpinner text={loadingText} size={60} />
                 </CardContent>
               </Card>
             )}
